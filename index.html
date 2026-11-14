@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>متابعة كابتن تسوباسا</title>
+<title>متابعة الحلقات</title>
 <meta name="theme-color" content="#17603a">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="تسوباسا">
+<meta name="apple-mobile-web-app-title" content="حلقاتي">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,7 +83,7 @@ button{cursor:pointer}
 .board .label{font-size:14px;opacity:.85;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .chip{background:var(--board-soft);border-radius:999px;padding:2px 10px;font-size:13px}
 .chip.gold{background:var(--gold-fill);color:#2b2000;font-weight:600}
-.ep{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.ep{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .ep .num{font-family:var(--font-display);font-size:64px;line-height:.9;font-variant-numeric:tabular-nums}
 .ep .name{font-size:18px;font-weight:500}
 .play{
@@ -108,6 +108,19 @@ a.btn{display:flex;align-items:center;justify-content:center;text-align:center;t
 }
 .minute input::placeholder{color:rgba(255,255,255,.6)}
 .done-all{font-size:18px;font-weight:500}
+
+/* Shows */
+.shows{display:flex;flex-wrap:wrap;gap:8px}
+.show{
+  flex:1 1 150px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:start;
+}
+.show[aria-pressed="true"]{background:var(--pitch);border-color:var(--pitch);color:var(--pitch-ink)}
+.show .t{font-weight:600}
+.show .c{font-size:13px;font-variant-numeric:tabular-nums;opacity:.8;flex:none;direction:ltr}
+.ep .name{display:flex;flex-direction:column;line-height:1.35}
+.ep .show-name{font-size:14px;opacity:.85;font-weight:400}
+[hidden]{display:none !important}
 
 /* Seasons */
 .tabs{display:flex;gap:8px}
@@ -160,9 +173,11 @@ a.btn{display:flex;align-items:center;justify-content:center;text-align:center;t
 <body>
 <main>
   <div class="top">
-    <h1>متابعة كابتن تسوباسا</h1>
+    <h1>متابعة الحلقات</h1>
     <span class="total" id="total"></span>
   </div>
+
+  <div class="shows" id="shows" aria-label="المسلسلات"></div>
 
   <section class="board" id="board" aria-live="polite"></section>
 
@@ -177,7 +192,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-align:center;t
   <div class="foot">
     <div class="row">
       <button class="ghost" id="resetSeason" type="button"></button>
-      <button class="ghost" id="resetAll" type="button">إعادة القائمة كلها من الأول</button>
+      <button class="ghost" id="resetAll" type="button"></button>
     </div>
     <div class="row">
       <button class="ghost" id="exportBtn" type="button">نسخة احتياطية من تقدمي</button>
@@ -198,54 +213,104 @@ a.btn{display:flex;align-items:center;justify-content:center;text-align:center;t
   </div>
 </div>
 
+<script src="./shows.js"></script>
 <script>
 (function(){
 "use strict";
-var SEASONS=[
- {name:"الموسم الأول",ids:["1941960363179919","909858888818993","1519469842692340","1376126987861736","4341105706101096","1405715268329608","1732903721391886","1692177725417995","1195803536091891","1534757851782997","1725058325459080","1011273111949555","2187941311750872","1375411844754929","2284229165677800","1582866593240294","1545773789985601","1727908705101034","1807096540718400","1586397879601491","1743050963249188","2582261328957043","1790926478926651","1713526799944232","908710631862530","27979192191741114","1382853046661178","1700338084580681","1598790918700980","1785538869285827","1737400923982187","1046958461455715","1473711941227916","1581140603553871","1638325994292235","1601886851623386","1109685361718341","1607530161076800","2753114535120513","1557763006074493","2103212893656701","1056249767272405","1770135174130899","1087700637482120","2309576579617583","1774742187183082","985911927869539","1075601061613521","998369546555487","2570071743416723","1592402529288086","1368248751636971"]},
- {name:"الموسم الثاني",ids:["1073499311942377","1683886226006023","894010246891146","1798687794458053","2115980158998906","1520078066803942","27734518279523014","1522969939598212","2825377564515306","1381708416866057","1413622260861691","1599941358197884","947976774363717","1715536099502116","1748127586393716","1452879090015680","1121613053770974","1083017464212026","1073779212047997","1824919715359276","1032116949863612","922415220933274","1554294352531317","1088378443638876","3473983322784463","911945098313623","942823122225574","2965133657164137","1675523526878237","1620345129805466","1740145277245793","4625245821132651","4525795974333816","4296435600573413","28392516757098517"]}
-];
-var EPS=[],BY={};
-SEASONS.forEach(function(s,si){s.ids.forEach(function(id,i){
-  var e={k:(si+1)+"-"+(i+1),s:si,n:i+1,i:EPS.length,url:"https://www.facebook.com/reel/"+id+"/"};
-  EPS.push(e);BY[e.k]=e;
-});});
+var SHOWS=(Array.isArray(window.SHOWS)?window.SHOWS:[]).filter(function(sh){
+  return sh&&typeof sh.id==="string"&&typeof sh.name==="string"&&Array.isArray(sh.seasons)&&sh.seasons.length;
+});
+var SHOW={};
+SHOWS.forEach(function(sh){
+  sh.eps=[];sh.by={};
+  sh.seasons.forEach(function(s,si){(s.ids||[]).forEach(function(id,i){
+    var e={k:(si+1)+"-"+(i+1),s:si,n:i+1,i:sh.eps.length,url:"https://www.facebook.com/reel/"+id+"/"};
+    sh.eps.push(e);sh.by[e.k]=e;
+  });});
+  SHOW[sh.id]=sh;
+});
+function el(tag,cls,text){var x=document.createElement(tag);if(cls)x.className=cls;if(text!=null)x.textContent=text;return x;}
+if(!SHOWS.length){
+  document.getElementById("board").appendChild(el("div","done-all","قائمة المسلسلات ما اتحملتش. راجع ملف shows.js."));
+  return;
+}
 
-var LS="tsubasa-progress-v1";
-var state={w:{},n:{},cur:null,t:0};   // w: watched, n: minute notes, cur: episode opened but not finished
+var LS="anime-progress-v2", LS_OLD="tsubasa-progress-v1";
+var state={shows:{},active:null,t:0};   // per show: w watched, n minute notes, cur episode opened but not finished
 var sel=null, tab=0, noteTimer=null;
 
-function clean(d){
-  var o={w:{},n:{},cur:null,t:0};
+function cleanShow(sh,d){
+  var o={w:{},n:{},cur:null};
   if(!d||typeof d!=="object")return o;
-  if(d.w&&typeof d.w==="object")for(var k in d.w)if(BY[k]&&d.w[k])o.w[k]=1;
-  if(d.n&&typeof d.n==="object")for(var j in d.n)if(BY[j]&&typeof d.n[j]==="string"&&d.n[j])o.n[j]=d.n[j].slice(0,20);
-  if(typeof d.cur==="string"&&BY[d.cur])o.cur=d.cur;
+  if(d.w&&typeof d.w==="object")for(var k in d.w)if(sh.by[k]&&d.w[k])o.w[k]=1;
+  if(d.n&&typeof d.n==="object")for(var j in d.n)if(sh.by[j]&&typeof d.n[j]==="string"&&d.n[j])o.n[j]=d.n[j].slice(0,20);
+  if(typeof d.cur==="string"&&sh.by[d.cur])o.cur=d.cur;
+  return o;
+}
+function clean(d){
+  var o={shows:{},active:null,t:0};
+  if(!d||typeof d!=="object")return o;
+  var src=d.shows;
+  if(!src&&d.w&&typeof d.w==="object")src={tsubasa:d};          // backup made by the first version
+  if(src&&typeof src==="object")for(var id in src){
+    if(SHOW[id])o.shows[id]=cleanShow(SHOW[id],src[id]);
+    else if(src[id]&&typeof src[id]==="object")o.shows[id]=src[id]; // keep progress of a show missing from the list
+  }
+  if(typeof d.active==="string"&&SHOW[d.active])o.active=d.active;
   if(typeof d.t==="number")o.t=d.t;
   return o;
 }
-try{var raw=localStorage.getItem(LS);if(raw)state=clean(JSON.parse(raw));}catch(e){}
+try{
+  var raw=localStorage.getItem(LS);
+  if(raw)state=clean(JSON.parse(raw));
+  else{var old=localStorage.getItem(LS_OLD);if(old)state=clean(JSON.parse(old));}
+}catch(e){}
+if(!state.active)state.active=SHOWS[0].id;
 
+function sh(){return SHOW[state.active];}
+function P(){var id=state.active;if(!state.shows[id])state.shows[id]={w:{},n:{},cur:null};return state.shows[id];}
 function persist(){
   state.t=Date.now();
   try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
 }
-function resumeKey(){
-  if(state.cur&&!state.w[state.cur])return state.cur;
-  for(var i=0;i<EPS.length;i++)if(!state.w[EPS[i].k])return EPS[i].k;
+function resumeOf(show,p){
+  if(!p)return show.eps.length?show.eps[0].k:null;
+  if(p.cur&&!p.w[p.cur])return p.cur;
+  for(var i=0;i<show.eps.length;i++)if(!p.w[show.eps[i].k])return show.eps[i].k;
   return null;
 }
-function el(tag,cls,text){var x=document.createElement(tag);if(cls)x.className=cls;if(text!=null)x.textContent=text;return x;}
+function resumeKey(){return resumeOf(sh(),P());}
+function epName(show,e){return (show.seasons.length>1?show.seasons[e.s].name+" · ":"")+"الحلقة "+e.n;}
+function epSay(show,e){return (show.seasons.length>1?show.seasons[e.s].name+" ":"")+"الحلقة "+e.n;}
+
+function renderShows(){
+  var box=document.getElementById("shows");box.textContent="";
+  SHOWS.forEach(function(show){
+    var p=state.shows[show.id],c=0;
+    if(p)for(var i=0;i<show.eps.length;i++)if(p.w[show.eps[i].k])c++;
+    var b=el("button","show");b.type="button";b.setAttribute("aria-pressed",String(show.id===state.active));
+    b.appendChild(el("span","t",show.name));
+    b.appendChild(el("span","c",c+" / "+show.eps.length));
+    b.addEventListener("click",function(){
+      if(show.id===state.active)return;
+      clearTimeout(noteTimer);
+      state.active=show.id;sel=null;persist();
+      var rk=resumeKey();tab=rk?sh().by[rk].s:0;render();
+    });
+    box.appendChild(b);
+  });
+}
 
 function renderBoard(){
+  var show=sh(),p=P();
   var b=document.getElementById("board");b.textContent="";
   var rk=resumeKey(), k=sel||rk;
   if(!k){
-    b.appendChild(el("div","done-all","خلصت الـ 87 حلقة كلها."));
-    b.appendChild(el("div","label","اختار أي حلقة من تحت لو عايز تعيدها، أو ابدأ القائمة من الأول."));
+    b.appendChild(el("div","done-all","خلصت حلقات "+show.name+" كلها ("+show.eps.length+" حلقة)."));
+    b.appendChild(el("div","label","اختار أي حلقة من تحت لو عايز تعيدها، أو ابدأ المسلسل من الأول."));
     return;
   }
-  var e=BY[k], watched=!!state.w[k], isResume=(k===rk), inProgress=(state.cur===k&&!watched);
+  var e=show.by[k], watched=!!p.w[k], isResume=(k===rk), inProgress=(p.cur===k&&!watched);
   var label=el("div","label");
   if(isResume){
     label.appendChild(el("span","chip gold","مكانك"));
@@ -258,14 +323,17 @@ function renderBoard(){
 
   var ep=el("div","ep");
   ep.appendChild(el("span","num",String(e.n)));
-  ep.appendChild(el("span","name",SEASONS[e.s].name+" · الحلقة "+e.n));
+  var nm=el("span","name");
+  nm.appendChild(el("span","show-name",show.name));
+  nm.appendChild(el("span",null,epName(show,e)));
+  ep.appendChild(nm);
   b.appendChild(ep);
 
+  function opened(){ if(!p.w[k]){p.cur=k;persist();setTimeout(render,600);} }
   var a=el("a","play");
   a.href=e.url;a.target="_blank";a.rel="noopener";
   a.innerHTML='<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5v13l11-6.5z" fill="currentColor"/></svg>';
-  a.appendChild(el("span",null,watched?"شغّلها تاني على فيسبوك":(state.n[k]?"كمّل الحلقة على فيسبوك":"شغّل الحلقة على فيسبوك")));
-  function opened(){ if(!state.w[k]){state.cur=k;persist();setTimeout(render,600);} }
+  a.appendChild(el("span",null,watched?"شغّلها تاني على فيسبوك":(p.n[k]?"كمّل الحلقة على فيسبوك":"شغّل الحلقة على فيسبوك")));
   a.addEventListener("click",opened);
   b.appendChild(a);
 
@@ -287,10 +355,10 @@ function renderBoard(){
     var m=el("div","minute");
     var lab=el("label",null,"وقفت عند الدقيقة");lab.htmlFor="minuteInput";
     var inp=el("input");inp.id="minuteInput";inp.type="text";inp.inputMode="numeric";inp.autocomplete="off";
-    inp.placeholder="مثلا 7:30";inp.value=state.n[k]||"";
+    inp.placeholder="مثلا 7:30";inp.value=p.n[k]||"";
     inp.addEventListener("input",function(){
       var v=inp.value.trim().slice(0,20);
-      if(v){state.n[k]=v;state.cur=k;}else{delete state.n[k];}
+      if(v){p.n[k]=v;p.cur=k;}else{delete p.n[k];}
       clearTimeout(noteTimer);noteTimer=setTimeout(function(){persist();renderGrid();},700);
     });
     m.appendChild(lab);m.appendChild(inp);b.appendChild(m);
@@ -301,39 +369,41 @@ function renderBoard(){
     var done=el("button","btn solid","خلصت الحلقة");done.type="button";
     done.addEventListener("click",function(){
       clearTimeout(noteTimer);
-      state.w[k]=1;delete state.n[k];if(state.cur===k)state.cur=null;
+      p.w[k]=1;delete p.n[k];if(p.cur===k)p.cur=null;
       sel=null;persist();
-      var nk=resumeKey();if(nk)tab=BY[nk].s;
+      var nk=resumeKey();if(nk)tab=show.by[nk].s;
       render();
     });
     row.appendChild(done);
   }else{
     var un=el("button","btn","شيل علامة المشاهدة");un.type="button";
-    un.addEventListener("click",function(){delete state.w[k];persist();render();});
+    un.addEventListener("click",function(){delete p.w[k];persist();render();});
     row.appendChild(un);
-    var from=el("button","btn solid","كمّل القائمة من هنا");from.type="button";
+    var from=el("button","btn solid","كمّل المسلسل من هنا");from.type="button";
     from.addEventListener("click",function(){
-      ask("هشيل علامة المشاهدة من "+SEASONS[e.s].name+" الحلقة "+e.n+" وكل الحلقات اللي بعدها، وتبقى دي مكانك. تمام؟",function(){
-        for(var i=e.i;i<EPS.length;i++){delete state.w[EPS[i].k];delete state.n[EPS[i].k];}
-        state.cur=k;sel=null;persist();render();
+      ask("هشيل علامة المشاهدة من "+epSay(show,e)+" وكل الحلقات اللي بعدها في "+show.name+"، وتبقى دي مكانك. تمام؟",function(){
+        for(var i=e.i;i<show.eps.length;i++){delete p.w[show.eps[i].k];delete p.n[show.eps[i].k];}
+        p.cur=k;sel=null;persist();render();
       });
     });
     row.appendChild(from);
   }
   if(!isResume&&rk){
-    var back=el("button","btn","ارجع لمكاني (الحلقة "+BY[rk].n+")");back.type="button";
-    back.addEventListener("click",function(){sel=null;tab=BY[rk].s;render();});
+    var back=el("button","btn","ارجع لمكاني ("+epSay(show,show.by[rk])+")");back.type="button";
+    back.addEventListener("click",function(){sel=null;tab=show.by[rk].s;render();});
     row.appendChild(back);
   }
   if(row.childNodes.length)b.appendChild(row);
 }
 
 function renderTabs(){
+  var show=sh(),p=P();
   var t=document.getElementById("tabs");t.textContent="";
-  var all=0;
-  SEASONS.forEach(function(s,si){
-    var c=0;for(var i=0;i<s.ids.length;i++)if(state.w[(si+1)+"-"+(i+1)])c++;
+  var all=0, multi=show.seasons.length>1;
+  show.seasons.forEach(function(s,si){
+    var c=0;for(var i=0;i<s.ids.length;i++)if(p.w[(si+1)+"-"+(i+1)])c++;
     all+=c;
+    if(!multi)return;
     var btn=el("button","tab");btn.type="button";btn.setAttribute("role","tab");btn.setAttribute("aria-selected",String(si===tab));
     btn.appendChild(el("span","t",s.name));
     btn.appendChild(el("span","c",c+" من "+s.ids.length));
@@ -341,21 +411,26 @@ function renderTabs(){
     btn.addEventListener("click",function(){tab=si;renderTabs();renderGrid();});
     t.appendChild(btn);
   });
-  document.getElementById("total").textContent="شاهدت "+all+" من "+EPS.length;
-  document.getElementById("resetSeason").textContent="إعادة "+SEASONS[tab].name+" من الأول";
+  t.hidden=!multi;
+  document.getElementById("total").textContent="شاهدت "+all+" من "+show.eps.length;
+  var rs=document.getElementById("resetSeason");
+  rs.hidden=!multi;
+  if(multi)rs.textContent="إعادة "+show.seasons[tab].name+" من الأول";
+  document.getElementById("resetAll").textContent="إعادة "+show.name+" من الأول";
 }
 
 function renderGrid(){
+  var show=sh(),p=P();
   var g=document.getElementById("grid");g.textContent="";
   var rk=resumeKey(), shown=sel||rk;
-  EPS.forEach(function(e){
+  show.eps.forEach(function(e){
     if(e.s!==tab)return;
     var b=el("button","tile",String(e.n));b.type="button";
-    var parts=[SEASONS[e.s].name+" الحلقة "+e.n];
-    if(state.w[e.k]){b.classList.add("watched");parts.push("شاهدتها");}
+    var parts=[epSay(show,e)];
+    if(p.w[e.k]){b.classList.add("watched");parts.push("شاهدتها");}
     if(e.k===rk){b.classList.add("here");parts.push("مكانك");}
     if(e.k===shown)b.classList.add("sel");
-    if(state.n[e.k]&&!state.w[e.k]){b.appendChild(el("span","dot"));parts.push("وقفت عند "+state.n[e.k]);}
+    if(p.n[e.k]&&!p.w[e.k]){b.appendChild(el("span","dot"));parts.push("وقفت عند "+p.n[e.k]);}
     b.setAttribute("aria-label",parts.join("، "));
     b.addEventListener("click",function(){
       sel=(e.k===rk)?null:e.k;render();
@@ -364,7 +439,10 @@ function renderGrid(){
     g.appendChild(b);
   });
 }
-function render(){renderBoard();renderTabs();renderGrid();}
+function render(){
+  if(tab>=sh().seasons.length)tab=0;
+  renderShows();renderBoard();renderTabs();renderGrid();
+}
 
 /* in-page confirm */
 var pending=null, veil=document.getElementById("veil");
@@ -376,33 +454,34 @@ veil.addEventListener("click",function(ev){if(ev.target===veil)closeAsk();});
 document.addEventListener("keydown",function(ev){if(ev.key==="Escape"&&!veil.hidden)closeAsk();});
 
 document.getElementById("resetAll").addEventListener("click",function(){
-  ask("همسح كل علامات المشاهدة والدقايق المحفوظة في الموسمين، وترجع للحلقة 1. تمام؟",function(){
-    state.w={};state.n={};state.cur=null;sel=null;tab=0;persist();render();
+  var show=sh();
+  ask("همسح كل علامات المشاهدة والدقايق المحفوظة في "+show.name+" بس، وترجع للحلقة 1. باقي المسلسلات زي ما هي. تمام؟",function(){
+    state.shows[show.id]={w:{},n:{},cur:null};sel=null;tab=0;persist();render();
   });
 });
 document.getElementById("resetSeason").addEventListener("click",function(){
-  var si=tab;
-  ask("همسح علامات المشاهدة والدقايق المحفوظة في "+SEASONS[si].name+" بس. تمام؟",function(){
-    EPS.forEach(function(e){if(e.s===si){delete state.w[e.k];delete state.n[e.k];}});
-    if(state.cur&&BY[state.cur].s===si)state.cur=null;
+  var show=sh(),p=P(),si=tab;
+  ask("همسح علامات المشاهدة والدقايق المحفوظة في "+show.seasons[si].name+" من "+show.name+" بس. تمام؟",function(){
+    show.eps.forEach(function(e){if(e.s===si){delete p.w[e.k];delete p.n[e.k];}});
+    if(p.cur&&show.by[p.cur].s===si)p.cur=null;
     sel=null;persist();render();
   });
 });
 
-var first=resumeKey();if(first)tab=BY[first].s;
+var first=resumeKey();if(first)tab=sh().by[first].s;
 render();
 
-/* this copy keeps progress on the device only */
+/* progress stays on this device; backup and restore go through a small file */
 var syncEl=document.getElementById("sync");
 function say(t){syncEl.textContent=t;}
 say("تقدمك محفوظ على الموبايل والمتصفح ده بس. اعمل نسخة احتياطية كل فترة.");
 document.getElementById("exportBtn").addEventListener("click",function(){
   try{
     var blob=new Blob([JSON.stringify(state)],{type:"application/json"});
-    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="tsubasa-progress.json";
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="episodes-progress.json";
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
-    say("نزلت ملف tsubasa-progress.json. احتفظ بيه في مكان آمن.");
+    say("نزلت ملف episodes-progress.json وفيه تقدمك في كل المسلسلات.");
   }catch(e){say("ما قدرتش أنزل الملف من المتصفح ده.");}
 });
 var importFile=document.getElementById("importFile");
@@ -413,10 +492,12 @@ importFile.addEventListener("change",function(){
   r.onload=function(){
     var d;
     try{d=JSON.parse(String(r.result));}catch(e){say("الملف ده مش نسخة احتياطية سليمة.");return;}
-    if(!d||typeof d!=="object"||typeof d.w!=="object"){say("الملف ده مش نسخة احتياطية سليمة.");return;}
-    ask("هستبدل تقدمك الحالي باللي في الملف. تمام؟",function(){
-      state=clean(d);sel=null;persist();
-      var rk=resumeKey();tab=rk?BY[rk].s:0;render();
+    if(!d||typeof d!=="object"||(typeof d.shows!=="object"&&typeof d.w!=="object")){say("الملف ده مش نسخة احتياطية سليمة.");return;}
+    ask("هستبدل تقدمك الحالي في كل المسلسلات باللي في الملف. تمام؟",function(){
+      var keep=state.active;
+      state=clean(d);if(!state.active)state.active=keep;
+      sel=null;persist();
+      var rk=resumeKey();tab=rk?sh().by[rk].s:0;render();
       say("رجّعت تقدمك من النسخة الاحتياطية.");
     });
   };
