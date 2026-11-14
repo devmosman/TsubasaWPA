@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>متابعة كابتن تسوباسا</title>
+<meta name="theme-color" content="#17603a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="تسوباسا">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Lalezar&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a scoreboard card on top that always says what to play next, squad-number tiles below. */
+:root{
+  --bg:#f0f4ed;
+  --surface:#ffffff;
+  --ink:#14251b;
+  --muted:#5a6c60;
+  --line:#d3ddd2;
+  --pitch:#1c7341;
+  --pitch-ink:#ffffff;
+  --board:#17603a;
+  --board-soft:rgba(255,255,255,.14);
+  --gold:#b47e00;
+  --gold-fill:#f4c542;
+  --font-display:"Lalezar","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --font-body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1812;
+    --surface:#16241b;
+    --ink:#e7f0e9;
+    --muted:#93a79a;
+    --line:#2a3c30;
+    --pitch:#3fb46f;
+    --pitch-ink:#08130c;
+    --board:#1a5535;
+    --board-soft:rgba(255,255,255,.12);
+    --gold:#f2c040;
+    --gold-fill:#f2c040;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1812;
+  --surface:#16241b;
+  --ink:#e7f0e9;
+  --muted:#93a79a;
+  --line:#2a3c30;
+  --pitch:#3fb46f;
+  --pitch-ink:#08130c;
+  --board:#1a5535;
+  --board-soft:rgba(255,255,255,.12);
+  --gold:#f2c040;
+  --gold-fill:#f2c040;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--font-body);font-size:16px;line-height:1.6;
+  -webkit-text-size-adjust:100%;
+}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--font-display);font-weight:400;font-size:28px;line-height:1.2;margin:0;text-wrap:balance}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.total{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold-fill);outline-offset:2px}
+
+/* Scoreboard card */
+.board{background:var(--board);color:#fff;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.board .label{font-size:14px;opacity:.85;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{background:var(--board-soft);border-radius:999px;padding:2px 10px;font-size:13px}
+.chip.gold{background:var(--gold-fill);color:#2b2000;font-weight:600}
+.ep{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.ep .num{font-family:var(--font-display);font-size:64px;line-height:.9;font-variant-numeric:tabular-nums}
+.ep .name{font-size:18px;font-weight:500}
+.play{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#fff;color:#11472a;text-decoration:none;font-weight:600;font-size:18px;
+  border-radius:12px;padding:14px 16px;min-height:52px;
+}
+.play svg{flex:none}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > *{flex:1 1 140px}
+.btn{
+  background:var(--board-soft);color:#fff;border:1px solid rgba(255,255,255,.28);
+  border-radius:12px;padding:10px 12px;min-height:46px;font-weight:500;
+}
+a.btn{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none}
+.btn.solid{background:var(--gold-fill);color:#2b2000;border-color:transparent;font-weight:600}
+.minute{display:flex;align-items:center;gap:10px;background:var(--board-soft);border-radius:12px;padding:8px 12px}
+.minute label{font-size:14px;flex:none}
+.minute input{
+  flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.5);
+  color:#fff;padding:4px 2px;font-variant-numeric:tabular-nums;direction:ltr;text-align:right;
+}
+.minute input::placeholder{color:rgba(255,255,255,.6)}
+.done-all{font-size:18px;font-weight:500}
+
+/* Seasons */
+.tabs{display:flex;gap:8px}
+.tab{
+  flex:1;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;text-align:start;display:flex;flex-direction:column;gap:6px;min-height:46px;
+}
+.tab[aria-selected="true"]{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
+.tab .t{font-weight:600}
+.tab .c{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pitch);border-radius:999px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:8px}
+.tile{
+  position:relative;aspect-ratio:1;min-height:46px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--line);
+  font-family:var(--font-display);font-size:22px;line-height:1;font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;justify-content:center;padding:0;
+}
+.tile.watched{background:var(--pitch);border-color:var(--pitch);color:var(--pitch-ink)}
+.tile.here{border:2px solid var(--gold);color:var(--gold)}
+.tile.here.watched{color:var(--pitch-ink)}
+.tile.sel{outline:3px solid var(--ink);outline-offset:2px}
+.tile .dot{position:absolute;top:5px;inset-inline-start:5px;width:8px;height:8px;border-radius:50%;background:var(--gold-fill)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line);background:var(--surface);display:inline-block}
+.sw.w{background:var(--pitch);border-color:var(--pitch)}
+.sw.h{border:2px solid var(--gold)}
+.sw.d{border:0;border-radius:50%;background:var(--gold-fill);width:9px;height:9px}
+
+.foot{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:16px}
+.foot .row > *{flex:1 1 160px}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:46px;color:var(--ink)}
+.sync{font-size:13px;color:var(--muted);margin:0}
+
+/* Confirm sheet */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:10}
+.veil[hidden]{display:none}
+.sheet{background:var(--surface);color:var(--ink);border-radius:18px;padding:18px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:14px}
+.sheet p{margin:0}
+.sheet .row > *{flex:1 1 120px}
+.danger{background:var(--pitch);color:var(--pitch-ink);border:0;border-radius:12px;padding:10px 12px;min-height:46px;font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .bar i{transition:width .25s ease}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>متابعة كابتن تسوباسا</h1>
+    <span class="total" id="total"></span>
+  </div>
+
+  <section class="board" id="board" aria-live="polite"></section>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend">
+    <span><i class="sw w"></i>شاهدتها</span>
+    <span><i class="sw h"></i>مكانك</span>
+    <span><i class="sw d"></i>فيها دقيقة محفوظة</span>
+  </div>
+
+  <div class="foot">
+    <div class="row">
+      <button class="ghost" id="resetSeason" type="button"></button>
+      <button class="ghost" id="resetAll" type="button">إعادة القائمة كلها من الأول</button>
+    </div>
+    <div class="row">
+      <button class="ghost" id="exportBtn" type="button">نسخة احتياطية من تقدمي</button>
+      <button class="ghost" id="importBtn" type="button">استرجاع نسخة احتياطية</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+    <p class="sync" id="sync"></p>
+  </div>
+</main>
+
+<div class="veil" id="veil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="veilText">
+    <p id="veilText"></p>
+    <div class="row">
+      <button class="danger" id="veilYes" type="button">أيوه</button>
+      <button class="ghost" id="veilNo" type="button">لأ، سيبها</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var SEASONS=[
+ {name:"الموسم الأول",ids:["1941960363179919","909858888818993","1519469842692340","1376126987861736","4341105706101096","1405715268329608","1732903721391886","1692177725417995","1195803536091891","1534757851782997","1725058325459080","1011273111949555","2187941311750872","1375411844754929","2284229165677800","1582866593240294","1545773789985601","1727908705101034","1807096540718400","1586397879601491","1743050963249188","2582261328957043","1790926478926651","1713526799944232","908710631862530","27979192191741114","1382853046661178","1700338084580681","1598790918700980","1785538869285827","1737400923982187","1046958461455715","1473711941227916","1581140603553871","1638325994292235","1601886851623386","1109685361718341","1607530161076800","2753114535120513","1557763006074493","2103212893656701","1056249767272405","1770135174130899","1087700637482120","2309576579617583","1774742187183082","985911927869539","1075601061613521","998369546555487","2570071743416723","1592402529288086","1368248751636971"]},
+ {name:"الموسم الثاني",ids:["1073499311942377","1683886226006023","894010246891146","1798687794458053","2115980158998906","1520078066803942","27734518279523014","1522969939598212","2825377564515306","1381708416866057","1413622260861691","1599941358197884","947976774363717","1715536099502116","1748127586393716","1452879090015680","1121613053770974","1083017464212026","1073779212047997","1824919715359276","1032116949863612","922415220933274","1554294352531317","1088378443638876","3473983322784463","911945098313623","942823122225574","2965133657164137","1675523526878237","1620345129805466","1740145277245793","4625245821132651","4525795974333816","4296435600573413","28392516757098517"]}
+];
+var EPS=[],BY={};
+SEASONS.forEach(function(s,si){s.ids.forEach(function(id,i){
+  var e={k:(si+1)+"-"+(i+1),s:si,n:i+1,i:EPS.length,url:"https://www.facebook.com/reel/"+id+"/"};
+  EPS.push(e);BY[e.k]=e;
+});});
+
+var LS="tsubasa-progress-v1";
+var state={w:{},n:{},cur:null,t:0};   // w: watched, n: minute notes, cur: episode opened but not finished
+var sel=null, tab=0, noteTimer=null;
+
+function clean(d){
+  var o={w:{},n:{},cur:null,t:0};
+  if(!d||typeof d!=="object")return o;
+  if(d.w&&typeof d.w==="object")for(var k in d.w)if(BY[k]&&d.w[k])o.w[k]=1;
+  if(d.n&&typeof d.n==="object")for(var j in d.n)if(BY[j]&&typeof d.n[j]==="string"&&d.n[j])o.n[j]=d.n[j].slice(0,20);
+  if(typeof d.cur==="string"&&BY[d.cur])o.cur=d.cur;
+  if(typeof d.t==="number")o.t=d.t;
+  return o;
+}
+try{var raw=localStorage.getItem(LS);if(raw)state=clean(JSON.parse(raw));}catch(e){}
+
+function persist(){
+  state.t=Date.now();
+  try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
+}
+function resumeKey(){
+  if(state.cur&&!state.w[state.cur])return state.cur;
+  for(var i=0;i<EPS.length;i++)if(!state.w[EPS[i].k])return EPS[i].k;
+  return null;
+}
+function el(tag,cls,text){var x=document.createElement(tag);if(cls)x.className=cls;if(text!=null)x.textContent=text;return x;}
+
+function renderBoard(){
+  var b=document.getElementById("board");b.textContent="";
+  var rk=resumeKey(), k=sel||rk;
+  if(!k){
+    b.appendChild(el("div","done-all","خلصت الـ 87 حلقة كلها."));
+    b.appendChild(el("div","label","اختار أي حلقة من تحت لو عايز تعيدها، أو ابدأ القائمة من الأول."));
+    return;
+  }
+  var e=BY[k], watched=!!state.w[k], isResume=(k===rk), inProgress=(state.cur===k&&!watched);
+  var label=el("div","label");
+  if(isResume){
+    label.appendChild(el("span","chip gold","مكانك"));
+    label.appendChild(el("span",null,inProgress?"كنت بتتفرج على":"الحلقة الجاية"));
+  }else{
+    label.appendChild(el("span","chip",watched?"شاهدتها قبل كده":"لسه ما شفتهاش"));
+    label.appendChild(el("span",null,"حلقة اخترتها من القائمة"));
+  }
+  b.appendChild(label);
+
+  var ep=el("div","ep");
+  ep.appendChild(el("span","num",String(e.n)));
+  ep.appendChild(el("span","name",SEASONS[e.s].name+" · الحلقة "+e.n));
+  b.appendChild(ep);
+
+  var a=el("a","play");
+  a.href=e.url;a.target="_blank";a.rel="noopener";
+  a.innerHTML='<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5v13l11-6.5z" fill="currentColor"/></svg>';
+  a.appendChild(el("span",null,watched?"شغّلها تاني على فيسبوك":(state.n[k]?"كمّل الحلقة على فيسبوك":"شغّل الحلقة على فيسبوك")));
+  function opened(){ if(!state.w[k]){state.cur=k;persist();setTimeout(render,600);} }
+  a.addEventListener("click",opened);
+  b.appendChild(a);
+
+  var openRow=el("div","row");
+  var app=el("a","btn applink","افتحها في تطبيق فيسبوك");
+  app.href="fb://facewebmodal/f?href="+encodeURIComponent(e.url);
+  app.addEventListener("click",opened);
+  openRow.appendChild(app);
+  var cp=el("button","btn","انسخ الرابط");cp.type="button";
+  cp.addEventListener("click",function(){
+    var ok=function(){cp.textContent="اتنسخ، الصقه في فيسبوك";},no=function(){cp.textContent="النسخ مش متاح هنا";};
+    try{navigator.clipboard.writeText(e.url).then(ok,no);}catch(err){no();}
+    opened();
+  });
+  openRow.appendChild(cp);
+  b.appendChild(openRow);
+
+  if(!watched){
+    var m=el("div","minute");
+    var lab=el("label",null,"وقفت عند الدقيقة");lab.htmlFor="minuteInput";
+    var inp=el("input");inp.id="minuteInput";inp.type="text";inp.inputMode="numeric";inp.autocomplete="off";
+    inp.placeholder="مثلا 7:30";inp.value=state.n[k]||"";
+    inp.addEventListener("input",function(){
+      var v=inp.value.trim().slice(0,20);
+      if(v){state.n[k]=v;state.cur=k;}else{delete state.n[k];}
+      clearTimeout(noteTimer);noteTimer=setTimeout(function(){persist();renderGrid();},700);
+    });
+    m.appendChild(lab);m.appendChild(inp);b.appendChild(m);
+  }
+
+  var row=el("div","row");
+  if(!watched){
+    var done=el("button","btn solid","خلصت الحلقة");done.type="button";
+    done.addEventListener("click",function(){
+      clearTimeout(noteTimer);
+      state.w[k]=1;delete state.n[k];if(state.cur===k)state.cur=null;
+      sel=null;persist();
+      var nk=resumeKey();if(nk)tab=BY[nk].s;
+      render();
+    });
+    row.appendChild(done);
+  }else{
+    var un=el("button","btn","شيل علامة المشاهدة");un.type="button";
+    un.addEventListener("click",function(){delete state.w[k];persist();render();});
+    row.appendChild(un);
+    var from=el("button","btn solid","كمّل القائمة من هنا");from.type="button";
+    from.addEventListener("click",function(){
+      ask("هشيل علامة المشاهدة من "+SEASONS[e.s].name+" الحلقة "+e.n+" وكل الحلقات اللي بعدها، وتبقى دي مكانك. تمام؟",function(){
+        for(var i=e.i;i<EPS.length;i++){delete state.w[EPS[i].k];delete state.n[EPS[i].k];}
+        state.cur=k;sel=null;persist();render();
+      });
+    });
+    row.appendChild(from);
+  }
+  if(!isResume&&rk){
+    var back=el("button","btn","ارجع لمكاني (الحلقة "+BY[rk].n+")");back.type="button";
+    back.addEventListener("click",function(){sel=null;tab=BY[rk].s;render();});
+    row.appendChild(back);
+  }
+  if(row.childNodes.length)b.appendChild(row);
+}
+
+function renderTabs(){
+  var t=document.getElementById("tabs");t.textContent="";
+  var all=0;
+  SEASONS.forEach(function(s,si){
+    var c=0;for(var i=0;i<s.ids.length;i++)if(state.w[(si+1)+"-"+(i+1)])c++;
+    all+=c;
+    var btn=el("button","tab");btn.type="button";btn.setAttribute("role","tab");btn.setAttribute("aria-selected",String(si===tab));
+    btn.appendChild(el("span","t",s.name));
+    btn.appendChild(el("span","c",c+" من "+s.ids.length));
+    var bar=el("span","bar"),fill=el("i");fill.style.width=(100*c/s.ids.length)+"%";bar.appendChild(fill);btn.appendChild(bar);
+    btn.addEventListener("click",function(){tab=si;renderTabs();renderGrid();});
+    t.appendChild(btn);
+  });
+  document.getElementById("total").textContent="شاهدت "+all+" من "+EPS.length;
+  document.getElementById("resetSeason").textContent="إعادة "+SEASONS[tab].name+" من الأول";
+}
+
+function renderGrid(){
+  var g=document.getElementById("grid");g.textContent="";
+  var rk=resumeKey(), shown=sel||rk;
+  EPS.forEach(function(e){
+    if(e.s!==tab)return;
+    var b=el("button","tile",String(e.n));b.type="button";
+    var parts=[SEASONS[e.s].name+" الحلقة "+e.n];
+    if(state.w[e.k]){b.classList.add("watched");parts.push("شاهدتها");}
+    if(e.k===rk){b.classList.add("here");parts.push("مكانك");}
+    if(e.k===shown)b.classList.add("sel");
+    if(state.n[e.k]&&!state.w[e.k]){b.appendChild(el("span","dot"));parts.push("وقفت عند "+state.n[e.k]);}
+    b.setAttribute("aria-label",parts.join("، "));
+    b.addEventListener("click",function(){
+      sel=(e.k===rk)?null:e.k;render();
+      document.getElementById("board").scrollIntoView({block:"start",behavior:"smooth"});
+    });
+    g.appendChild(b);
+  });
+}
+function render(){renderBoard();renderTabs();renderGrid();}
+
+/* in-page confirm */
+var pending=null, veil=document.getElementById("veil");
+function ask(text,yes){pending=yes;document.getElementById("veilText").textContent=text;veil.hidden=false;document.getElementById("veilNo").focus();}
+function closeAsk(){veil.hidden=true;pending=null;}
+document.getElementById("veilYes").addEventListener("click",function(){var f=pending;closeAsk();if(f)f();});
+document.getElementById("veilNo").addEventListener("click",closeAsk);
+veil.addEventListener("click",function(ev){if(ev.target===veil)closeAsk();});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"&&!veil.hidden)closeAsk();});
+
+document.getElementById("resetAll").addEventListener("click",function(){
+  ask("همسح كل علامات المشاهدة والدقايق المحفوظة في الموسمين، وترجع للحلقة 1. تمام؟",function(){
+    state.w={};state.n={};state.cur=null;sel=null;tab=0;persist();render();
+  });
+});
+document.getElementById("resetSeason").addEventListener("click",function(){
+  var si=tab;
+  ask("همسح علامات المشاهدة والدقايق المحفوظة في "+SEASONS[si].name+" بس. تمام؟",function(){
+    EPS.forEach(function(e){if(e.s===si){delete state.w[e.k];delete state.n[e.k];}});
+    if(state.cur&&BY[state.cur].s===si)state.cur=null;
+    sel=null;persist();render();
+  });
+});
+
+var first=resumeKey();if(first)tab=BY[first].s;
+render();
+
+/* this copy keeps progress on the device only */
+var syncEl=document.getElementById("sync");
+function say(t){syncEl.textContent=t;}
+say("تقدمك محفوظ على الموبايل والمتصفح ده بس. اعمل نسخة احتياطية كل فترة.");
+document.getElementById("exportBtn").addEventListener("click",function(){
+  try{
+    var blob=new Blob([JSON.stringify(state)],{type:"application/json"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="tsubasa-progress.json";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    say("نزلت ملف tsubasa-progress.json. احتفظ بيه في مكان آمن.");
+  }catch(e){say("ما قدرتش أنزل الملف من المتصفح ده.");}
+});
+var importFile=document.getElementById("importFile");
+document.getElementById("importBtn").addEventListener("click",function(){importFile.click();});
+importFile.addEventListener("change",function(){
+  var f=importFile.files&&importFile.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    var d;
+    try{d=JSON.parse(String(r.result));}catch(e){say("الملف ده مش نسخة احتياطية سليمة.");return;}
+    if(!d||typeof d!=="object"||typeof d.w!=="object"){say("الملف ده مش نسخة احتياطية سليمة.");return;}
+    ask("هستبدل تقدمك الحالي باللي في الملف. تمام؟",function(){
+      state=clean(d);sel=null;persist();
+      var rk=resumeKey();tab=rk?BY[rk].s:0;render();
+      say("رجّعت تقدمك من النسخة الاحتياطية.");
+    });
+  };
+  r.onerror=function(){say("ما قدرتش أقرا الملف.");};
+  r.readAsText(f);importFile.value="";
+});
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(function(){});});
+}
+})();
+</script>
+</body>
+</html>
